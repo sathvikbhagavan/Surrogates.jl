@@ -2,47 +2,42 @@ using SafeTestsets
 
 @safetestset "SurrogatesFlux" begin
     using Surrogates
-    using Surrogates: SobolSample
     using Flux
     using SurrogatesFlux
     using LinearAlgebra
     using Zygote
 
-    #1D
-    a = 0.0
-    b = 10.0
-    obj_1D = x -> 2 * x + 3
-    x = sample(10, 0.0, 10.0, SobolSample())
-    y = obj_1D.(x)
-    my_model = Chain(Dense(1, 1), first)
-    my_loss(x, y) = Flux.mse(my_model(x), y)
-    my_opt = Descent(0.01)
-    n_echos = 1
-    my_neural = NeuralSurrogate(x, y, a, b, model = my_model, loss = my_loss, opt = my_opt,
-        n_echos = 1)
-    my_neural_kwargs = NeuralSurrogate(x, y, a, b)
-    add_point!(my_neural, 8.5, 20.0)
-    add_point!(my_neural, [3.2, 3.5], [7.4, 8.0])
-    val = my_neural(5.0)
+    @testset "1D" begin
+        a = 0.0
+        b = 10.0
+        obj_1D = x -> 2 * x + 3
+        x = reduce(hcat, sample(10, 0.0, 10.0, SobolSample())[:, :])
+        y = obj_1D.(x)
+        my_model = Chain(Dense(1, 1))
+        my_neural_kwargs = NeuralSurrogate(x, y, a, b, model = my_model)
+        my_neural = NeuralSurrogate(x, y, a, b)
+        update!(my_neural, reduce(hcat, [[8.5]]), reduce(hcat, [[20.0]]))
+        update!(my_neural, reduce(hcat, [3.2, 3.5]), reduce(hcat, [7.4, 8.0]))
+        val = my_neural(5.0)
+    end
 
-    #ND
-
-    lb = [0.0, 0.0]
-    ub = [5.0, 5.0]
-    x = sample(5, lb, ub, SobolSample())
-    obj_ND_neural(x) = x[1] * x[2]
-    y = obj_ND_neural.(x)
-    my_model = Chain(Dense(2, 1), first)
-    my_loss(x, y) = Flux.mse(my_model(x), y)
-    my_opt = Descent(0.01)
-    n_echos = 1
-    my_neural = NeuralSurrogate(x, y, lb, ub, model = my_model, loss = my_loss,
-        opt = my_opt, n_echos = 1)
-    my_neural_kwargs = NeuralSurrogate(x, y, lb, ub)
-    my_neural((3.5, 1.49))
-    my_neural([3.4, 1.4])
-    add_point!(my_neural, (3.5, 1.4), 4.9)
-    add_point!(my_neural, [(3.5, 1.4), (1.5, 1.4), (1.3, 1.2)], [1.3, 1.4, 1.5])
+    @testset "ND" begin
+        lb = [0.0, 0.0]
+        ub = [5.0, 5.0]
+        x = reduce(hcat, collect.(sample(5, lb, ub, SobolSample())))
+        obj_ND_neural(x) = x[1] * x[2]
+        y = reduce(hcat, obj_ND_neural.(eachcol(x)))
+        my_model = Chain(Dense(2, 1))
+        my_loss(x, y) = Flux.mse(my_model(x), y)
+        my_opt = Descent(0.01)
+        my_neural = NeuralSurrogate(x, y, lb, ub, model = my_model, loss = my_loss,
+            opt = my_opt, n_epochs = 1)
+        my_neural_kwargs = NeuralSurrogate(x, y, lb, ub, model = my_model)
+        my_neural((3.5, 1.49))
+        my_neural([3.4, 1.4])
+        add_point!(my_neural, (3.5, 1.4), 4.9)
+        add_point!(my_neural, [(3.5, 1.4), (1.5, 1.4), (1.3, 1.2)], [1.3, 1.4, 1.5])
+    end
 
     # Multi-output #98
     f = x -> [x^2, x]
