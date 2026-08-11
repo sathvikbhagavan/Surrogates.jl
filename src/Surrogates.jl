@@ -1,11 +1,12 @@
 module Surrogates
 
+using DataInterpolations: CubicHermiteSpline
 using Distributions: Normal, cdf, pdf, truncated
 using ExtendableSparse: ExtendableSparseMatrix
 using GLM: lm
 using IterativeSolvers: cg
-using LinearAlgebra: Diagonal, I, Symmetric, cholesky, cond, diag, dot, eigvals, norm,
-    pinv, qr, ⋅
+using LinearAlgebra: Diagonal, I, Symmetric, cholesky, cond, diag, dot, eigvals, kron,
+    norm, pinv, qr, ⋅
 using PrecompileTools: @compile_workload, @setup_workload
 using QuasiMonteCarlo: GoldenSample, GridSample, HaltonSample, KroneckerSample,
     LatinHypercubeSample, RandomSample, SamplingAlgorithm, SobolSample
@@ -65,6 +66,7 @@ include("VariableFidelity.jl")
 include("Earth.jl")
 include("GEK.jl")
 include("GEKPLS.jl")
+include("RMTC.jl")
 include("VirtualStrategy.jl")
 
 """
@@ -80,7 +82,7 @@ current_surrogates = [
     "Kriging", "LinearSurrogate", "LobachevskySurrogate",
     "NeuralSurrogate", "GENNSurrogate",
     "RadialBasis", "XGBoostSurrogate", "SecondOrderPolynomialSurrogate",
-    "Wendland", "GEK", "PolynomialChaosSurrogate",
+    "Wendland", "GEK", "PolynomialChaosSurrogate", "RMTCSurrogate",
 ]
 
 """
@@ -317,6 +319,7 @@ export Wendland
 export VariableFidelitySurrogate
 export EarthSurrogate
 export GEK
+export RMTCSurrogate
 export AbstractSurrogate
 
 # Extensions
